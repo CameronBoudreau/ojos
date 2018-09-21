@@ -43,18 +43,17 @@ func ojosHandler(w http.ResponseWriter, r *http.Request) {
 		InternalServerErrorWriter(w)
 		return
 	}
-	reqURL := r.FormValue("url")
+	job.URL = r.FormValue("url")
 	selector := r.FormValue("selector")
-	fmt.Printf("url: %s\nselector: %s\n", reqURL, selector)
-	job.URL = reqURL
+
 	for _, val := range strings.Fields(selector) {
 		job.Selectors = append(job.Selectors, val)
 	}
 
 	//Build params into querystring for service
-	formattedURL, err := formatRequestUrl(reqURL, selector)
+	formattedURL, err := formatRequestUrl(job.URL, selector)
 	if err != nil {
-		fmt.Printf("Error formatting requested url and selector for: %v\n", err)
+		fmt.Printf("Error formatting requested url and selectors for: %v\n", err)
 		InternalServerErrorWriter(w)
 		return
 	}
@@ -80,21 +79,20 @@ func ojosHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(bodyBytes)
 		bytesWritten = len(bodyBytes)
 		job.Success = true
-
 	default:
 		//Set 1x1 pixel as response image
 		bytesWritten = writeDefaultImage(w)
 	}
 	w.Header().Set("Content-Type", "image/png")
 	w.Header().Set("Content-Length", strconv.Itoa(bytesWritten))
-	fmt.Printf("\nJob: %+v\n", job)
 
 	//record stats
 	analyzeJob(job)
+
+	fmt.Printf("Job done: %+v\n\n", job)
 }
 
 func formatRequestUrl(reqURL, selector string) (formattedURL string, err error) {
-	fmt.Println("Starting format of URL for Capturama service...")
 	//Properly encode selector string
 	selector = URLEncodeString(selector)
 	// fmt.Printf("Selector after encode: %q\n", selector)
